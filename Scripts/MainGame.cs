@@ -24,10 +24,11 @@ public class MainGame : MonoBehaviour
   public Button UIButtonMaintoStart;
   public Button UIButtonMaintoSelect;
   public Button UIButtonLeveltoMain;
-  public GameObject UIButtonSelect; 
+  public Button UIButtonGametoMain;
+  public GameObject UIButtonSelect;
 
-  // Create the a global level that will be load the json file into
-    [Serializable]
+  // the decorated level will be put in this object
+  [Serializable]
   private class Level
   {
     public int width;
@@ -37,14 +38,18 @@ public class MainGame : MonoBehaviour
     public int[] tileSelected;
     public string name;
   }
+  Level level_json = new Level();
   Level level = new Level();
+  //Level complete or not
   private bool levelActive_state;
+  //Level paused or not
+  private bool gameActive_state;
 
   private DirectoryInfo mapDirectory;
-  private FileInfo[] fis;
+  private FileInfo[] maps;
 
   // Main game Tilemap
-  public Tilemap mapClick;
+  public Tilemap GameTilemap_clickable;
 
   public GameObject tileNumber;
   public Tile tileBasic;
@@ -60,16 +65,21 @@ public class MainGame : MonoBehaviour
     UIButtonMaintoSelect.onClick.AddListener(UISelect_transition); 
 
     // Select level menu btton listeners
+
     mapDirectory = new DirectoryInfo(Application.dataPath + "/Scripts/Maps");
-    fis = mapDirectory.GetFiles();
-    foreach (FileInfo fi in fis)
+    maps = mapDirectory.GetFiles();
+    List<GameObject> goButton_list = new List<GameObject>();
+
+    for (int l = 0; l<maps.Length; l++) 
     {
-      if (fi.Extension.Contains("json"))
+      if (maps[l].Extension.Contains("json"))
       {
+        //l /= 2;
+        //Debug.Log(maps[0]);
         GameObject goButton = Instantiate(UIButtonSelect);
-        UnityEngine.UI.Button goButton2 = gameObject.AddComponent<UnityEngine.UI.Button>();
-        goButton.GetComponentInChildren<Button>().onClick.AddListener(delegate { LevelLoad(0); });
-        goButton.transform.SetParent(UIMenuSelectPanel, false);
+        goButton_list.Add(goButton);
+        goButton_list[l].GetComponentInChildren<Button>().onClick.AddListener(delegate { LevelLoad(l); });
+        goButton_list[l].transform.SetParent(UIMenuSelectPanel, false); 
       }
     }
     UIButtonLeveltoMain.onClick.AddListener(UIMainMenu_transition);
@@ -79,23 +89,27 @@ public class MainGame : MonoBehaviour
     UIButtonPopuptoMain.onClick.AddListener(UIMainMenu_transition);
     UIButtonPopuptoSelect.onClick.AddListener(UISelect_transition);
 
+    UIButtonGametoMain.onClick.AddListener(StateGame_pause);
 
     // Transition screens
     UIMenuMain.gameObject.SetActive(true);
     UIMenuSelect.gameObject.SetActive(false);
     UIMenuPopup.gameObject.SetActive(false);
+    UIButtonGametoMain.gameObject.SetActive(false);
     levelActive_state = false;
   }
 
   void Update()
   {
+    //Debug.Log(levelActive_state);
     if (levelActive_state == true)
     {
+      GameTilemap_clickable.gameObject.SetActive(true);
       UIMenuMain.gameObject.SetActive(false);
       UIMenuSelect.gameObject.SetActive(false);
       UIMenuPopup.gameObject.SetActive(false);
+      UIButtonGametoMain.gameObject.SetActive(true);
       LevelUpdate();
-     // Debug.Log("complete");
     }
   }
 
@@ -103,7 +117,7 @@ public class MainGame : MonoBehaviour
   Vector3Int TileVector_get(Vector3 levelPos)
   {
     // Return the tile that is clicked
-    Vector3Int tilePos = mapClick.WorldToCell(levelPos);
+    Vector3Int tilePos = GameTilemap_clickable.WorldToCell(levelPos);
     
     // Make sure its in the game screen but also exclude the left coloumn and top row from selection, it is adjusted centering it like a graph
     if (tilePos.x >= level.width / 2 || tilePos.y >= level.height / 2 - 1 || tilePos.x < -level.width / 2 + 1 || tilePos.y < -level.height / 2)
@@ -140,6 +154,11 @@ public class MainGame : MonoBehaviour
     UIMenuSelect.gameObject.SetActive(true);
     UIMenuPopup.gameObject.SetActive(false);
   }
+  public void StateGame_pause()
+  {
+    gameActive_state = false;
+  }
+  // levelActive_state = false;
 
   // Manipulate Level
   public void LevelLoad(int l)
@@ -149,7 +168,7 @@ public class MainGame : MonoBehaviour
     //fis = mapDirectory.GetFiles();
 
     // Read the json file into a local string 
-    string json = File.ReadAllText(fis[l].ToString());
+    string json = File.ReadAllText(maps[l].ToString());
     // Debug.Log(json);
 
     // Build json string into an object
@@ -235,7 +254,7 @@ public class MainGame : MonoBehaviour
         int yCentre = y - level.height / 2;
 
         // This is another instantiate but all the changes need be in place before its creation
-        mapClick.SetTile(new Vector3Int(xCentre, yCentre, 0), tileBasic);
+        GameTilemap_clickable.SetTile(new Vector3Int(xCentre, yCentre, 0), tileBasic);
 
         // Checking level for a currently selected tile, will be used in save files
         if (level.tileSelected[levelCell] == 1)
@@ -248,6 +267,7 @@ public class MainGame : MonoBehaviour
       };
     };
     levelActive_state = true;
+    gameActive_state = true;
   }
   private void LevelUpdate()
   {
@@ -263,7 +283,7 @@ public class MainGame : MonoBehaviour
       //Debug.Log(idClick);
 
       // Set color to red if tile is white else color is white
-      if (mapClick.GetColor(tileVector_int) == Color.white)
+      if (GameTilemap_clickable.GetColor(tileVector_int) == Color.white)
       {
         SetTileColour(Color.red, tileVector_int);
         level.tileSelected[LevelArrayIndex_create(tileVector_int)] = 1;
@@ -278,9 +298,26 @@ public class MainGame : MonoBehaviour
     // Check if you Won by comparing correct tiles with selected tiles, else save the game
     if (level.tileSelected.SequenceEqual(level.tileCorrect))
     {
-      // Debug.Log("Won");
+      // Reset the map local save back to 0
+      for (int i = 0; i < level.height * level.width; i++)
+      {
+        level.tileSelected[i] = 0;
+      }
+      string json = JsonUtility.ToJson(level);
+      File.WriteAllText(UnityEngine.Application.dataPath + "/Scripts/Maps/Map1.json", json);
+      // Unload level and show popup menu
+      levelActive_state = false;
       UIMenuPopup.gameObject.SetActive(true);
-      mapClick.gameObject.SetActive(false);
+      GameTilemap_clickable.gameObject.SetActive(false);
+      UIButtonGametoMain.gameObject.SetActive(false);
+    }
+    // check to see if game is paused
+    else if (gameActive_state == false)
+    {
+      levelActive_state = false;
+      UIMenuMain.gameObject.SetActive(true);
+      GameTilemap_clickable.gameObject.SetActive(false);
+      UIButtonGametoMain.gameObject.SetActive(false);
     }
     else
     {
@@ -294,9 +331,9 @@ public class MainGame : MonoBehaviour
   private void SetTileColour(Color colour, Vector3Int position)
   {
     // Flag the tile, inidicating that it can change colour.
-    mapClick.SetTileFlags(position, TileFlags.None);
+    GameTilemap_clickable.SetTileFlags(position, TileFlags.None);
 
     // Set the colour.
-    mapClick.SetColor(position, colour);
+    GameTilemap_clickable.SetColor(position, colour);
   }
 }
