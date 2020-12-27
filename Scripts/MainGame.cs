@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using UnityEngine.UI;
@@ -10,9 +10,10 @@ using Tile = UnityEngine.Tilemaps.Tile;
 public class MainGame : MonoBehaviour
 { 
 
-  public Camera UICameraMain;
+  public Camera CameraMain;
 
-  public Canvas UIMenu;
+  public Canvas ScreenMain;
+  public RectTransform UIGrid;
   public RectTransform UIMenuMain; 
   public RectTransform UIMenuSelect;
   public RectTransform UIMenuSelectPanel;
@@ -27,7 +28,6 @@ public class MainGame : MonoBehaviour
   public Button UIButtonGametoMain;
   public GameObject UIButtonSelect;
 
-  // the decorated level will be put in this object
   [Serializable]
   private class Level
   {
@@ -38,57 +38,93 @@ public class MainGame : MonoBehaviour
     public int[] tileSelected;
     public string name;
   }
-  Level level_json = new Level();
   Level level = new Level();
-  //Level complete or not
-  private bool levelActive_state;
-  //Level paused or not
-  private bool gameActive_state;
+  // Level active or not
+  private bool levelState;
+  // Game active or not
+  private bool gameState;
 
-  private DirectoryInfo mapDirectory;
-  private FileInfo[] maps;
+  private bool gameState_started;
+  // Current Level number
+  private int levelNumber_current;
+
+  //private DirectoryInfo mapDirectory;
+  private String[] maps;
 
   // Main game Tilemap
   public Tilemap GameTilemap_clickable;
 
   public GameObject tileNumber;
   public Tile tileBasic;
-  public Sprite square1;
+  public Sprite square1; 
   public Sprite square2;
   public Sprite square3;
   // Tilemap tiles objects
 
+  public TextAsset map1;
+  public TextAsset map2;
+  public TextAsset map3;
+  public TextAsset map4;
+  public TextAsset map5;
+  public TextAsset map6;
+  public TextAsset map7;
+  public TextAsset map8;
+  public TextAsset map9;
+  public TextAsset map10;
+
   void Start()
   {
+    // Current level set default is 0 
+    levelNumber_current = 0;
+
+    // Load map directory and get all map files
+    //mapDirectory = new DirectoryInfo(Application.persistentDataPath);
+
+    maps = new String[10];
+
+    maps[0] = map1.text;
+    maps[1] = map2.text;
+    maps[2] = map3.text;
+    maps[3] = map4.text;
+    maps[4] = map5.text;
+    maps[5] = map6.text;
+    maps[6] = map7.text;
+    maps[7] = map8.text;
+    maps[8] = map9.text;
+    maps[9] = map10.text;
+
+    //mapDirectory.GetFiles();
+
     // Main menu button listeners
-    UIButtonMaintoStart.onClick.AddListener(delegate { LevelLoad(0); });
+    UIButtonMaintoStart.onClick.AddListener(delegate { LevelLoad(levelNumber_current); });
     UIButtonMaintoSelect.onClick.AddListener(UISelect_transition); 
 
-    // Select level menu btton listeners
-
-    mapDirectory = new DirectoryInfo(Application.dataPath + "/Scripts/Maps");
-    maps = mapDirectory.GetFiles();
-    List<GameObject> goButton_list = new List<GameObject>();
-
-    for (int l = 0; l<maps.Length; l++) 
+    // Select level menu button listeners
+    for (int i = 0; i<maps.Length; i++)
     {
-      if (maps[l].Extension.Contains("json"))
-      {
-        //l /= 2;
-        //Debug.Log(maps[0]);
-        GameObject goButton = Instantiate(UIButtonSelect);
-        goButton_list.Add(goButton);
-        goButton_list[l].GetComponentInChildren<Button>().onClick.AddListener(delegate { LevelLoad(l); });
-        goButton_list[l].transform.SetParent(UIMenuSelectPanel, false); 
-      }
+      // Encapsulate the level number to break dependency
+      int l = i;
+      // Read the json file into a local string 
+      string json = maps[l];
+
+      // Build json string into an object
+      level = JsonUtility.FromJson<Level>(json);
+
+      // Prefab button added to the select menu panel
+      GameObject goButton = Instantiate(UIButtonSelect, UIMenuSelectPanel);
+      Button btn = goButton.GetComponent<Button>();
+      btn.GetComponentInChildren<Text>().text = level.name;
+      btn.GetComponentInChildren<TextMeshProUGUI>().text = (l + 1).ToString();
+      btn.onClick.AddListener(delegate { levelNumber_current = l; LevelLoad(l); });
     }
     UIButtonLeveltoMain.onClick.AddListener(UIMainMenu_transition);
 
     // Popup menu button listeners
-    UIButtonPopuptoStart.onClick.AddListener(delegate { LevelLoad(0); });
+    UIButtonPopuptoStart.onClick.AddListener(delegate { levelNumber_current += 1; LevelLoad(levelNumber_current); });
     UIButtonPopuptoMain.onClick.AddListener(UIMainMenu_transition);
     UIButtonPopuptoSelect.onClick.AddListener(UISelect_transition);
 
+    // Ingame menu
     UIButtonGametoMain.onClick.AddListener(StateGame_pause);
 
     // Transition screens
@@ -96,51 +132,27 @@ public class MainGame : MonoBehaviour
     UIMenuSelect.gameObject.SetActive(false);
     UIMenuPopup.gameObject.SetActive(false);
     UIButtonGametoMain.gameObject.SetActive(false);
-    levelActive_state = false;
+
+    // set states
+    levelState = false;
+    gameState_started = false;
   }
 
   void Update()
   {
     //Debug.Log(levelActive_state);
-    if (levelActive_state == true)
+    if (levelState == true)
     {
-      GameTilemap_clickable.gameObject.SetActive(true);
       UIMenuMain.gameObject.SetActive(false);
       UIMenuSelect.gameObject.SetActive(false);
       UIMenuPopup.gameObject.SetActive(false);
       UIButtonGametoMain.gameObject.SetActive(true);
+      GameTilemap_clickable.gameObject.SetActive(true);
       LevelUpdate();
     }
   }
 
-  // Basic functions
-  Vector3Int TileVector_get(Vector3 levelPos)
-  {
-    // Return the tile that is clicked
-    Vector3Int tilePos = GameTilemap_clickable.WorldToCell(levelPos);
-    
-    // Make sure its in the game screen but also exclude the left coloumn and top row from selection, it is adjusted centering it like a graph
-    if (tilePos.x >= level.width / 2 || tilePos.y >= level.height / 2 - 1 || tilePos.x < -level.width / 2 + 1 || tilePos.y < -level.height / 2)
-    {
-      // An unreachable tile
-      tilePos = new Vector3Int(0, 0, -1);
-    }
-
-    // Return it as an int vector, this is needed to change colors
-    return tilePos;
-  }
-  int LevelArrayIndex_create(Vector3 tilePos)
-  {
-    // Turning all negative tile positions into positive
-    tilePos.x += level.width / 2;
-    tilePos.y = (tilePos.y + level.height / 2) * level.width;
-
-    int levelIndex = (int)(tilePos.x + tilePos.y);
-
-    // Returning the index of the level
-    return levelIndex;
-  }
-
+ 
   // UI Transitions
   public void UIMainMenu_transition()
   {
@@ -156,27 +168,35 @@ public class MainGame : MonoBehaviour
   }
   public void StateGame_pause()
   {
-    gameActive_state = false;
+    gameState = false;
+    gameState_started = false;
   }
-  // levelActive_state = false;
 
   // Manipulate Level
-  public void LevelLoad(int l)
+  public void LevelLoad(int l) 
   {
-    Debug.Log(l);
+    GameTilemap_clickable.ClearAllTiles();
 
-    //fis = mapDirectory.GetFiles();
+    //Debug.Log(l);
 
     // Read the json file into a local string 
-    string json = File.ReadAllText(maps[l].ToString());
+    string json = maps[l];
     // Debug.Log(json);
 
     // Build json string into an object
     level = JsonUtility.FromJson<Level>(json);
 
     // Sets the main camera  to the same size at the level height
-    UICameraMain.orthographicSize = level.height / 2;
-    //view.orthographicSize = 20;
+    CameraMain.orthographicSize = (float)level.height * 5 / 6; 
+
+    //Debug.Log(ScreenMain.GetComponent<RectTransform>().rect.width);
+    //Debug.Log(ScreenMain.GetComponent<RectTransform>().rect.height);
+
+    UIGrid.localPosition = new Vector3(-ScreenMain.GetComponent<RectTransform>().rect.width / 2, -ScreenMain.GetComponent<RectTransform>().rect.height / 2, 0);
+    if (level.width % 2 == 1)
+    {
+      UIGrid.localPosition = new Vector3(-ScreenMain.GetComponent<RectTransform>().rect.width / 2 - 0.5f, -ScreenMain.GetComponent<RectTransform>().rect.height / 2 - 0.5f, 0);
+    }
 
     // Loop for the coordinates
     for (int y = 0; y<level.height; y++)
@@ -248,7 +268,7 @@ public class MainGame : MonoBehaviour
         {
           tileBasic.sprite = square1;
         }
-
+ 
         // Centre the tiles rather than using the top right quadrant
         int xCentre = x - level.width / 2;
         int yCentre = y - level.height / 2;
@@ -266,34 +286,12 @@ public class MainGame : MonoBehaviour
         Destroy(tileBasic.gameObject, 1);
       };
     };
-    levelActive_state = true;
-    gameActive_state = true;
+    levelState = true;
+    gameState = true;
   }
+
   private void LevelUpdate()
   {
-    // Is the mouse button down and not up
-    if (Input.GetMouseButtonDown(0) && !Input.GetMouseButtonUp(0))
-    {
-      // Mouse position to camera position 
-      Vector3 mouse_pos = Input.mousePosition;
-      mouse_pos = Camera.main.ScreenToWorldPoint(mouse_pos);
-
-      // Return tileMap x and y (x, y, z) based on the clicked tile position
-      Vector3Int tileVector_int = TileVector_get(mouse_pos);
-      //Debug.Log(idClick);
-
-      // Set color to red if tile is white else color is white
-      if (GameTilemap_clickable.GetColor(tileVector_int) == Color.white)
-      {
-        SetTileColour(Color.red, tileVector_int);
-        level.tileSelected[LevelArrayIndex_create(tileVector_int)] = 1;
-      }
-      else
-      {
-        SetTileColour(Color.white, tileVector_int);
-        level.tileSelected[LevelArrayIndex_create(tileVector_int)] = 0;
-      }
-    }
 
     // Check if you Won by comparing correct tiles with selected tiles, else save the game
     if (level.tileSelected.SequenceEqual(level.tileCorrect))
@@ -304,27 +302,89 @@ public class MainGame : MonoBehaviour
         level.tileSelected[i] = 0;
       }
       string json = JsonUtility.ToJson(level);
-      File.WriteAllText(UnityEngine.Application.dataPath + "/Scripts/Maps/Map1.json", json);
+      maps[levelNumber_current] = json;
       // Unload level and show popup menu
-      levelActive_state = false;
+      levelState = false;
       UIMenuPopup.gameObject.SetActive(true);
       GameTilemap_clickable.gameObject.SetActive(false);
       UIButtonGametoMain.gameObject.SetActive(false);
     }
-    // check to see if game is paused
-    else if (gameActive_state == false)
+    // Is the mouse button down and not up
+    if (Input.GetMouseButtonDown(0) && !Input.GetMouseButtonUp(0) || !gameState)
     {
-      levelActive_state = false;
-      UIMenuMain.gameObject.SetActive(true);
-      GameTilemap_clickable.gameObject.SetActive(false);
-      UIButtonGametoMain.gameObject.SetActive(false);
+      // check to see if game is paused
+      if (!gameState)
+      {
+        levelState = false;
+        UIMenuMain.gameObject.SetActive(true);
+        GameTilemap_clickable.gameObject.SetActive(false);
+        UIButtonGametoMain.gameObject.SetActive(false);
+      }
+      else
+      {
+        string json = JsonUtility.ToJson(level);
+        maps[levelNumber_current] = json;
+      }
+      // Mouse position to camera position 
+      Vector3 mouse_pos = Input.mousePosition;
+      mouse_pos = Camera.main.ScreenToWorldPoint(mouse_pos);
+
+      // Return tileMap x and y (x, y, z) based on the clicked tile position
+      Vector3Int tileVector_int = TileVector_get(mouse_pos);
+
+      // Set color to red if tile is white else color is white
+      if (tileVector_int.z == 0) { 
+        if (GameTilemap_clickable.GetColor(tileVector_int) == Color.white) 
+        {
+          SetTileColour(new Color(200,0,0), tileVector_int);
+          level.tileSelected[LevelArrayIndex_create(tileVector_int)] = 1;
+          // Debug.Log(tileVector_int);
+        }
+        else
+        {
+          SetTileColour(Color.white, tileVector_int);
+          level.tileSelected[LevelArrayIndex_create(tileVector_int)] = 0;
+          // Debug.Log(tileVector_int);
+        }
+      }
     }
-    else
+  }
+
+   // Basic functions
+  Vector3Int TileVector_get(Vector3 levelPos)
+  {
+    // Return the tile that is clicked
+    Vector3Int tilePos = GameTilemap_clickable.WorldToCell(levelPos);
+
+    // A number to remove the top and left border of the grid from tile selection
+    int borderY = 1;
+    int borderX = 1;
+    if (level.height % 2 == 1)
     {
-      string json = JsonUtility.ToJson(level);
-      File.WriteAllText(UnityEngine.Application.dataPath + "/Scripts/Maps/Map1.json", json);
-      // Debug.Log("Not Won");
+      borderY = (int)0.5;
+      borderX = (int)1.5;
     }
+
+    // Make sure it's in the game screen but also exclude the left column and top row from selection, it is adjusted centering it like a graph
+    if (tilePos.x >= level.width / 2 + borderX || tilePos.y >= level.height / 2 - borderY || tilePos.x < -level.width / 2 + borderX || tilePos.y < -level.height / 2)
+    {
+      // An unreachable tile
+      tilePos = new Vector3Int(0, 0, -1);
+    }
+
+    // Return it as an int vector, this is needed to change colors
+    return tilePos;
+  }
+  int LevelArrayIndex_create(Vector3 tilePos)
+  {
+    // Turning all negative tile positions into positive
+    tilePos.x += level.width / 2;
+    tilePos.y = (tilePos.y + level.height / 2) * level.width;
+
+    int levelIndex = (int)(tilePos.x + tilePos.y);
+
+    // Returning the index of the level
+    return levelIndex;
   }
 
   // Manipulate TileMaps
