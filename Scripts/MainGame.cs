@@ -28,6 +28,8 @@ public class MainGame : MonoBehaviour
   public Button UIButtonGametoMain;
   public GameObject UIButtonSelect;
 
+  public Image UIImage;
+
   [Serializable]
   private class Level
   {
@@ -36,29 +38,40 @@ public class MainGame : MonoBehaviour
     public int[] tileType;
     public int[] tileCorrect;
     public int[] tileSelected;
+    public int mirror;
     public string name;
   }
   Level level = new Level();
+
   // Level active or not
   private bool levelState;
   // Game active or not
   private bool gameState;
 
-  private bool gameState_started;
   // Current Level number
   private int levelNumber_current;
+
+  // Correct tile countdown
+  private int tileCorrect_countdown;
 
   //private DirectoryInfo mapDirectory;
   private String[] maps;
 
   // Main game Tilemap
-  public Tilemap GameTilemap_clickable;
+  public Tilemap MapClick;
+  public Tilemap MapNumber;
 
   public GameObject tileNumber;
   public Tile tileBasic;
   public Sprite square1; 
   public Sprite square2;
   public Sprite square3;
+  public Sprite square4;
+
+  public Sprite mirror1;
+  public Sprite mirror2;
+  public Sprite mirror3;
+  public Sprite mirror4;
   // Tilemap tiles objects
 
   public TextAsset map1;
@@ -71,6 +84,11 @@ public class MainGame : MonoBehaviour
   public TextAsset map8;
   public TextAsset map9;
   public TextAsset map10;
+  public TextAsset map11;
+  public TextAsset map12;
+  public TextAsset map13;
+  public TextAsset map14;
+  public TextAsset map15;
 
   void Start()
   {
@@ -80,7 +98,7 @@ public class MainGame : MonoBehaviour
     // Load map directory and get all map files
     //mapDirectory = new DirectoryInfo(Application.persistentDataPath);
 
-    maps = new String[10];
+    maps = new String[15];
 
     maps[0] = map1.text;
     maps[1] = map2.text;
@@ -92,6 +110,11 @@ public class MainGame : MonoBehaviour
     maps[7] = map8.text;
     maps[8] = map9.text;
     maps[9] = map10.text;
+    maps[10] = map11.text;
+    maps[11] = map12.text;
+    maps[12] = map13.text;
+    maps[13] = map14.text;
+    maps[14] = map15.text;
 
     //mapDirectory.GetFiles();
 
@@ -133,9 +156,8 @@ public class MainGame : MonoBehaviour
     UIMenuPopup.gameObject.SetActive(false);
     UIButtonGametoMain.gameObject.SetActive(false);
 
-    // set states
+    // Set states
     levelState = false;
-    gameState_started = false;
   }
 
   void Update()
@@ -147,7 +169,8 @@ public class MainGame : MonoBehaviour
       UIMenuSelect.gameObject.SetActive(false);
       UIMenuPopup.gameObject.SetActive(false);
       UIButtonGametoMain.gameObject.SetActive(true);
-      GameTilemap_clickable.gameObject.SetActive(true);
+      MapClick.gameObject.SetActive(true);
+      MapNumber.gameObject.SetActive(true);
       LevelUpdate();
     }
   }
@@ -169,13 +192,13 @@ public class MainGame : MonoBehaviour
   public void StateGame_pause()
   {
     gameState = false;
-    gameState_started = false;
   }
 
   // Manipulate Level
   public void LevelLoad(int l) 
-  {
-    GameTilemap_clickable.ClearAllTiles();
+  { 
+    MapClick.ClearAllTiles();
+    MapNumber.ClearAllTiles();
 
     //Debug.Log(l);
 
@@ -198,28 +221,91 @@ public class MainGame : MonoBehaviour
       UIGrid.localPosition = new Vector3(-ScreenMain.GetComponent<RectTransform>().rect.width / 2 - 0.5f, -ScreenMain.GetComponent<RectTransform>().rect.height / 2 - 0.5f, 0);
     }
 
+    UIImage.sprite = null;
+    //Debug.Log(level.mirror);
+    if (level.mirror == 1)
+    {
+      UIImage.sprite = mirror1;
+    }
+    else if(level.mirror == 2)
+    {
+      UIImage.sprite = mirror2;
+    }
+    else if(level.mirror == 3)
+    {
+      UIImage.sprite = mirror3;
+    }
+    else if(level.mirror == 4)
+    {
+      UIImage.sprite = mirror4;
+    }
+
     // Loop for the coordinates
     for (int y = 0; y<level.height; y++)
     {
       for (int x = 0; x<level.width; x++)
       {
+        // Reset basic tile
+        tileBasic.gameObject = default;
+
+        // Basic Functions
+
         // The correct x and y index in the array is the height time the max width plus the width since for everything max width you will get a new row
         int levelCell = y * level.width + x;
 
+        // MapClick Logic
+
+        // Set tile sprite setting based of the first column and last row
+        if (x == 0 && y == level.height - 1)
+        {
+          tileBasic.sprite = square4;
+        }
+        else if (x == 0 && y != level.height - 1)
+        {
+          tileBasic.sprite = square2;
+        }
+        else if (x != 0 && y == level.height - 1)
+        {
+          tileBasic.sprite = square3;
+        }
+        else
+        {
+          tileBasic.sprite = square1;
+        }
+
+        // Centre the tiles rather than using the top right quadrant
+        int xCentre = x - level.width / 2;
+        int yCentre = y - level.height / 2;
+
+        // This is another instantiate but all the changes need be in place before its creation
+        MapClick.SetTile(new Vector3Int(xCentre, yCentre, 0), tileBasic);
+
+        // Checking level for a currently selected tile, will be used in save files
+        if (level.tileSelected[levelCell] == 1)
+        {
+          SetTileColour(Color.red, new Vector3Int(xCentre, yCentre, 0));
+        }
+
+        // Reset basic tile
+        tileBasic.sprite = null;
+
+
+        // MapNumber Logic
+
         // Create a new asset inside the game to break its reference to the origin
-        tileBasic.gameObject = Instantiate(tileNumber, new Vector3(0, 0, -20), Quaternion.identity);
+        tileBasic.gameObject = Instantiate(tileNumber, new Vector3(-99, 0, 0), Quaternion.identity);
 
         // Prefab can now be instanced without changing the other tiles prefabs
-        TextMesh number = tileBasic.gameObject.GetComponentInChildren<TextMesh>();
+        TextMeshPro number_value = tileBasic.gameObject.GetComponentInChildren<TextMeshPro>();
 
         // Logic for tile type 1
         if (level.tileType[levelCell] == 1)
         {
           int tileNumberCorrect = 0;
-          for (int xmax = 0; xmax<level.width; xmax++)
+          for (int xmax = 0; xmax < level.width; xmax++)
           {
             int logic = levelCell + xmax;
-            if (0 < logic && logic<level.width* level.height)
+            if (0 < logic && logic < level.width * level.height)
             {
               //Debug.Log(logic);
               if (level.tileCorrect[logic] == 1) { tileNumberCorrect++; }
@@ -234,7 +320,7 @@ public class MainGame : MonoBehaviour
               if (level.tileCorrect[logic] == 1) { tileNumberCorrect++; }
             }
           }
-          number.text = tileNumberCorrect.ToString();
+          number_value.text = tileNumberCorrect.ToString();
         }
 
         // Logic for tile type 2
@@ -252,35 +338,33 @@ public class MainGame : MonoBehaviour
               }
             }
           }
-          number.text = tileNumberCorrect.ToString();
+          number_value.text = tileNumberCorrect.ToString();
         }
 
-        // Set tile sprite setting based of the first column and last row
-        if (x == 0 && y != level.height - 1)
+        // Logic for tile type 3
+        if (level.tileType[levelCell] == 3)
         {
-          tileBasic.sprite = square2;
+          tileCorrect_countdown = 0;
+          for (int y_count = 0; y_count < level.height; y_count++)
+          {
+            for (int x_count = 0; x_count < level.width; x_count++)
+            {
+              int logic = y_count * level.width + x_count;
+              //Debug.Log(logic);
+              if (level.tileCorrect[logic] == 1) { tileCorrect_countdown++; }
+            }
+          }
+          number_value.text = tileCorrect_countdown.ToString();
         }
-        else if (y == level.height - 1 && x != 0)
-        {
-          tileBasic.sprite = square3;
-        }
-        else
-        {
-          tileBasic.sprite = square1;
-        }
- 
-        // Centre the tiles rather than using the top right quadrant
-        int xCentre = x - level.width / 2;
-        int yCentre = y - level.height / 2;
 
-        // This is another instantiate but all the changes need be in place before its creation
-        GameTilemap_clickable.SetTile(new Vector3Int(xCentre, yCentre, 0), tileBasic);
-
-        // Checking level for a currently selected tile, will be used in save files
-        if (level.tileSelected[levelCell] == 1)
+        // Logic for tile type 4
+        if (level.tileType[levelCell] == 4)
         {
-          SetTileColour(Color.red, new Vector3Int(xCentre, yCentre, 0));
+          number_value.text = "?";
         }
+
+
+        MapNumber.SetTile(new Vector3Int(xCentre, yCentre, 0), tileBasic);
 
         // Destroy the original object after the launch
         Destroy(tileBasic.gameObject, 1);
@@ -292,7 +376,6 @@ public class MainGame : MonoBehaviour
 
   private void LevelUpdate()
   {
-
     // Check if you Won by comparing correct tiles with selected tiles, else save the game
     if (level.tileSelected.SequenceEqual(level.tileCorrect))
     {
@@ -306,18 +389,21 @@ public class MainGame : MonoBehaviour
       // Unload level and show popup menu
       levelState = false;
       UIMenuPopup.gameObject.SetActive(true);
-      GameTilemap_clickable.gameObject.SetActive(false);
+      MapClick.gameObject.SetActive(false);
+      MapNumber.gameObject.SetActive(false);
       UIButtonGametoMain.gameObject.SetActive(false);
     }
+
     // Is the mouse button down and not up
     if (Input.GetMouseButtonDown(0) && !Input.GetMouseButtonUp(0) || !gameState)
     {
-      // check to see if game is paused
+      // Check to see if game is paused
       if (!gameState)
       {
         levelState = false;
         UIMenuMain.gameObject.SetActive(true);
-        GameTilemap_clickable.gameObject.SetActive(false);
+        MapClick.gameObject.SetActive(false);
+        MapNumber.gameObject.SetActive(false);
         UIButtonGametoMain.gameObject.SetActive(false);
       }
       else
@@ -325,6 +411,7 @@ public class MainGame : MonoBehaviour
         string json = JsonUtility.ToJson(level);
         maps[levelNumber_current] = json;
       }
+
       // Mouse position to camera position 
       Vector3 mouse_pos = Input.mousePosition;
       mouse_pos = Camera.main.ScreenToWorldPoint(mouse_pos);
@@ -333,19 +420,29 @@ public class MainGame : MonoBehaviour
       Vector3Int tileVector_int = TileVector_get(mouse_pos);
 
       // Set color to red if tile is white else color is white
-      if (tileVector_int.z == 0) { 
-        if (GameTilemap_clickable.GetColor(tileVector_int) == Color.white) 
+      if (tileVector_int.z == 0) {
+        if (MapClick.GetColor(tileVector_int) == Color.white) 
         {
           SetTileColour(new Color(200,0,0), tileVector_int);
           level.tileSelected[LevelArrayIndex_create(tileVector_int)] = 1;
           // Debug.Log(tileVector_int);
+          tileCorrect_countdown++;
         }
         else
         {
           SetTileColour(Color.white, tileVector_int);
           level.tileSelected[LevelArrayIndex_create(tileVector_int)] = 0;
           // Debug.Log(tileVector_int);
+          tileCorrect_countdown--;
         }
+         
+        //Tile tileUpdate = MapNumber.GetTile<Tile>(new Vector3Int(0, level.height - 1, 0));
+
+        //string countdown = tileUpdate.gameObject.GetComponent<TextMeshPro>().text;
+
+        //Debug.Log(countdown);
+
+        //MapNumber.SetTile(new Vector3Int(0, level.height - 1, 0), tileUpdate);
       }
     }
   }
@@ -354,7 +451,7 @@ public class MainGame : MonoBehaviour
   Vector3Int TileVector_get(Vector3 levelPos)
   {
     // Return the tile that is clicked
-    Vector3Int tilePos = GameTilemap_clickable.WorldToCell(levelPos);
+    Vector3Int tilePos = MapClick.WorldToCell(levelPos);
 
     // A number to remove the top and left border of the grid from tile selection
     int borderY = 1;
@@ -391,9 +488,9 @@ public class MainGame : MonoBehaviour
   private void SetTileColour(Color colour, Vector3Int position)
   {
     // Flag the tile, inidicating that it can change colour.
-    GameTilemap_clickable.SetTileFlags(position, TileFlags.None);
+    MapClick.SetTileFlags(position, TileFlags.None);
 
     // Set the colour.
-    GameTilemap_clickable.SetColor(position, colour);
+    MapClick.SetColor(position, colour);
   }
 }
