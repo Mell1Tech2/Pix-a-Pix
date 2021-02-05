@@ -1,0 +1,21 @@
+{"level":"static",
+"width":4,"height":4,
+"tileType":[
+1,0,0,0,
+1,0,0,0,
+1,0,0,0,
+3,1,1,1],
+"tileCorrect":[
+0,0,0,0,
+0,0,1,0,
+0,0,0,0,
+0,0,0,0],
+ "tileSelected":[
+0,0,0,0,
+0,0,0,0,
+0,0,0,0,
+0,0,0,0
+],"mirror":1,
+"type1RestrictX":[0,4],
+"type1RestrictY":[0,4],
+"type2Restict":[0,9],"name":"Tutorial"}

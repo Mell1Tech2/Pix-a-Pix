@@ -1,0 +1,8 @@
+{"level":"random",
+"width":5,"height":5,
+"mirrorOptions":[1],
+"tileCorrectRestrict":[0,15],
+"type1RestrictX":[0,4],
+"type1RestrictY":[0,4],
+"type2Restict":[0,1,8,9],
+"name":"Beginner"}
