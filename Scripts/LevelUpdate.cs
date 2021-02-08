@@ -29,7 +29,7 @@ public class LevelUpdate : MonoBehaviour
     }
 
     // Is the mouse button down and not up
-    if (Input.GetMouseButtonDown(0) && !Input.GetMouseButtonUp(0) || !MainGame.gameState)
+    if (Input.GetMouseButton(0) && !Input.GetMouseButtonUp(0) || !MainGame.gameState)
     {
       // Check to see if game is paused
       if (!MainGame.gameState)
@@ -58,19 +58,23 @@ public class LevelUpdate : MonoBehaviour
       // Set color to red if tile is white else color is white
       if (tileVector_int.z == 0)
       {
-        if (MainGame.MapClick.GetColor(tileVector_int) == Color.white)
+        if (MainGame.MapClick.GetColor(tileVector_int) == Color.white && MainGame.mouseState == 0 || MainGame.mouseState == 1)
         {
           MainGame.SetTileColour(new Color(200, 0, 0), tileVector_int);
           levelActive.tileSelected[MainGame.LevelArrayIndex_create(tileVector_int)] = 1;
           // Debug.Log(tileVector_int);
           MainGame.tileCorrect_countdown++;
+
+          MainGame.mouseState = 1;
         }
-        else
+        else if(MainGame.mouseState == 0 || MainGame.mouseState == 2)
         {
           MainGame.SetTileColour(Color.white, tileVector_int);
           levelActive.tileSelected[MainGame.LevelArrayIndex_create(tileVector_int)] = 0;
           // Debug.Log(tileVector_int);
           MainGame.tileCorrect_countdown--;
+
+          MainGame.mouseState = 2;
         }
 
         //Tile tileUpdate = MapNumber.GetTile<Tile>(new Vector3Int(0, level.height - 1, 0));
@@ -81,6 +85,10 @@ public class LevelUpdate : MonoBehaviour
 
         //MapNumber.SetTile(new Vector3Int(0, level.height - 1, 0), tileUpdate);
       }
+    }
+    if (Input.GetMouseButtonUp(0))
+    {
+      MainGame.mouseState = 0;
     }
   }
 }

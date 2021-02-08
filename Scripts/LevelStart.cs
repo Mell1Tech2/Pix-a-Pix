@@ -271,7 +271,7 @@ public class LevelStart: MonoBehaviour
           //number_value.text = "?";
         }
 
-        //turns zeros to nothing
+        // Turns zeros to question marks
         if (number_value.text == "0")
         { 
           //number_value.text = "?";

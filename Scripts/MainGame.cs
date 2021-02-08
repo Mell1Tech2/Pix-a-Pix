@@ -74,6 +74,10 @@ public class MainGame : MonoBehaviour
   [NonSerialized]
   public bool gameState;
 
+  // G
+  [NonSerialized]
+  public int mouseState;
+
   // Current Level number
   [NonSerialized]
   public int levelNumber_current;
@@ -186,6 +190,7 @@ public class MainGame : MonoBehaviour
 
     // Set states
     levelState = false;
+    mouseState = 0;
   }
 
   void Update()
