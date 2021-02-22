@@ -7,7 +7,6 @@ public class LevelStart: MonoBehaviour
 {
   [SerializeField]
   MainGame parentMainGame;
-  internal static LevelStart instance;
 
   // Tiles
   public GameObject tileNumber;
@@ -24,7 +23,7 @@ public class LevelStart: MonoBehaviour
   public Sprite mirror4;
   private int tileCorrect_countdown;
 
-  // Randomly generate a new active level
+  // *Randomly generate a new static level*
   public void LevelGenerate(MainGame.LevelRandom levelRandom)
   {
 
@@ -100,7 +99,7 @@ public class LevelStart: MonoBehaviour
     LevelLoad(levelStatic);
   }
 
-  // Procedual generation of static level
+  // *Procedual generation of a static level*
   public void LevelLoad(MainGame.LevelStatic levelStatic)
   {
     parentMainGame.MapClick.ClearAllTiles();
@@ -146,7 +145,7 @@ public class LevelStart: MonoBehaviour
         checkStaticCorrect += levelStatic.tileCorrect[activeCell];
 
 
-        // MapClick Logic
+        // **MapClick Logic**
 
         // Set tile sprite setting based of the first column and last row
         if (x == 0 && y == levelStatic.height - 1)
@@ -183,7 +182,7 @@ public class LevelStart: MonoBehaviour
         tileBasic.sprite = null;
 
 
-        // MapNumber Logic
+        // **MapNumber Logic**
 
         // Create a new asset inside the game to break its reference to the origin
         tileBasic.gameObject = Instantiate(tileNumber, new Vector3(-99, 0, 0), Quaternion.identity);
@@ -243,7 +242,7 @@ public class LevelStart: MonoBehaviour
               }
             }
           }
-          //Applies the static level type 2 restictions
+          // Applies the static level type 2 restictions
           //if (Array.Exists<int>(levelStatic.type2Restict, element => element.Equals(tileNumberCorrect))) { tileNumberCorrect = 0; }
 
           number_value.text = tileNumberCorrect.ToString();
@@ -289,8 +288,5 @@ public class LevelStart: MonoBehaviour
     Debug.Log(checkStaticType);
     Debug.Log(checkStaticCorrect);
     Debug.Log("Type" + checkStaticType.Length + " Correct" + checkStaticCorrect.Length);
-
-    parentMainGame.levelState = true;
-    parentMainGame.gameState = true;
   }
 }

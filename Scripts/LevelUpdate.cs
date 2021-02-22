@@ -7,7 +7,8 @@ public class LevelUpdate : MonoBehaviour
 {
   [SerializeField]
   MainGame MainGame;
-  internal static LevelUpdate instance;
+
+  // *Main game loop*
   public void LevelListen(MainGame.LevelStatic levelActive)
   {
     // Check if you Won by comparing correct tiles with selected tiles, else save the game
@@ -20,25 +21,21 @@ public class LevelUpdate : MonoBehaviour
       }
       string json = JsonUtility.ToJson(levelActive);
       MainGame.maps[MainGame.levelNumber_current] = json;
+
       // Unload level and show popup menu
-      MainGame.levelState = false;
-      MainGame.UIMenuPopup.gameObject.SetActive(true);
-      MainGame.MapClick.gameObject.SetActive(false);
-      MainGame.MapNumber.gameObject.SetActive(false);
-      MainGame.UIButtonGametoMain.gameObject.SetActive(false);
+      MainGame.gameState = MainGame.GameState.Menu;
+      MainGame.menuState = MainGame.MenuState.Popup;
+      MainGame.runState = MainGame.RunState.Transition;
     }
 
     // Is the mouse button down and not up
-    if (Input.GetMouseButton(0) && !Input.GetMouseButtonUp(0) || !MainGame.gameState)
+    if (Input.GetMouseButton(0) && !Input.GetMouseButtonUp(0) || MainGame.gameState == MainGame.GameState.Menu)
     {
       // Check to see if game is paused
-      if (!MainGame.gameState)
+      if (MainGame.gameState == MainGame.GameState.Menu)
       {
-        MainGame.levelState = false;
-        MainGame.UIMenuMain.gameObject.SetActive(true);
-        MainGame.MapClick.gameObject.SetActive(false);
-        MainGame.MapNumber.gameObject.SetActive(false);
-        MainGame.UIButtonGametoMain.gameObject.SetActive(false);
+        MainGame.menuState = MainGame.MenuState.Main;
+        MainGame.runState = MainGame.RunState.Transition;
       }
       else
       {
@@ -49,8 +46,6 @@ public class LevelUpdate : MonoBehaviour
       // Mouse position to camera position 
       Vector3 mouse_pos = Input.mousePosition;
       mouse_pos = Camera.main.ScreenToWorldPoint(mouse_pos);
-
-      Vector3 offset = gameObject.transform.position - Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, mouse_pos.z));
 
       // Return tileMap x and y (x, y, z) based on the clicked tile position
       Vector3Int tileVector_int = MainGame.TileVector_get(mouse_pos);
