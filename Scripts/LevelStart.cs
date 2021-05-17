@@ -175,7 +175,7 @@ public class LevelStart: MonoBehaviour
         // Checking levelActive for a currently selected tile, will be used in save files
         if (levelStatic.tileSelected[activeCell] == 1)
         {
-          parentMainGame.SetTileColour(Color.red, new Vector3Int(xCentre, yCentre, 0));
+          parentMainGame.SetTileColour(new Color(200, 0, 0), new Vector3Int(xCentre, yCentre, 0));
         }
 
         // Reset basic tile

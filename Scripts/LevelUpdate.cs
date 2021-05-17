@@ -1,12 +1,15 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 
 public class LevelUpdate : MonoBehaviour
 {
   [SerializeField]
-  MainGame MainGame;
+  MainGame parentMainGame;
+
+  private int DialogueCount = 0;
 
   // *Main game loop*
   public void LevelListen(MainGame.LevelStatic levelActive)
@@ -20,27 +23,27 @@ public class LevelUpdate : MonoBehaviour
         levelActive.tileSelected[i] = 0;
       }
       string json = JsonUtility.ToJson(levelActive);
-      MainGame.maps[MainGame.levelNumber_current] = json;
+      parentMainGame.maps[parentMainGame.levelNumber_current] = json;
 
       // Unload level and show popup menu
-      MainGame.gameState = MainGame.GameState.Menu;
-      MainGame.menuState = MainGame.MenuState.Popup;
-      MainGame.runState = MainGame.RunState.Transition;
+      parentMainGame.gameState = MainGame.GameState.Menu;
+      parentMainGame.menuState = MainGame.MenuState.Popup;
+      parentMainGame.runState = MainGame.RunState.Transition;
     }
 
     // Is the mouse button down and not up
-    if (Input.GetMouseButton(0) && !Input.GetMouseButtonUp(0) || MainGame.gameState == MainGame.GameState.Menu)
+    if (Input.GetMouseButton(0) && !Input.GetMouseButtonUp(0) || parentMainGame.gameState == MainGame.GameState.Menu)
     {
       // Check to see if game is paused
-      if (MainGame.gameState == MainGame.GameState.Menu)
+      if (parentMainGame.gameState == MainGame.GameState.Menu)
       {
-        MainGame.menuState = MainGame.MenuState.Main;
-        MainGame.runState = MainGame.RunState.Transition;
+        parentMainGame.menuState = MainGame.MenuState.Main;
+        parentMainGame.runState = MainGame.RunState.Transition;
       }
       else
       {
         string json = JsonUtility.ToJson(levelActive);
-        MainGame.maps[MainGame.levelNumber_current] = json;
+        parentMainGame.maps[parentMainGame.levelNumber_current] = json;
       }
 
       // Mouse position to camera position 
@@ -48,30 +51,29 @@ public class LevelUpdate : MonoBehaviour
       mouse_pos = Camera.main.ScreenToWorldPoint(mouse_pos);
 
       // Return tileMap x and y (x, y, z) based on the clicked tile position
-      Vector3Int tileVector_int = MainGame.TileVector_get(mouse_pos);
+      Vector3Int tileVector_int = parentMainGame.TileVector_get(mouse_pos);
 
       // Set color to red if tile is white else color is white
       if (tileVector_int.z == 0)
       {
-        if (MainGame.MapClick.GetColor(tileVector_int) == Color.white && MainGame.mouseState == 0 || MainGame.mouseState == 1)
+        if (parentMainGame.MapClick.GetColor(tileVector_int) == Color.white && parentMainGame.mouseState == 0 || parentMainGame.mouseState == 1)
         {
-          MainGame.SetTileColour(new Color(200, 0, 0), tileVector_int);
-          levelActive.tileSelected[MainGame.LevelArrayIndex_create(tileVector_int)] = 1;
+          parentMainGame.SetTileColour(new Color(200, 0, 0), tileVector_int);
+          levelActive.tileSelected[parentMainGame.LevelArrayIndex_create(tileVector_int)] = 1;
           // Debug.Log(tileVector_int);
-          MainGame.tileCorrect_countdown++;
+          parentMainGame.tileCorrect_countdown++;
 
-          MainGame.mouseState = 1;
+          parentMainGame.mouseState = 1;
         }
-        else if(MainGame.mouseState == 0 || MainGame.mouseState == 2)
+        else if(parentMainGame.MapClick.GetColor(tileVector_int) == new Color(200, 0, 0) && parentMainGame.mouseState == 0 || parentMainGame.mouseState == 2)
         {
-          MainGame.SetTileColour(Color.white, tileVector_int);
-          levelActive.tileSelected[MainGame.LevelArrayIndex_create(tileVector_int)] = 0;
+          parentMainGame.SetTileColour(Color.white, tileVector_int);
+          levelActive.tileSelected[parentMainGame.LevelArrayIndex_create(tileVector_int)] = 0;
           // Debug.Log(tileVector_int);
-          MainGame.tileCorrect_countdown--;
+          parentMainGame.tileCorrect_countdown--;
 
-          MainGame.mouseState = 2;
+          parentMainGame.mouseState = 2;
         }
-
         //Tile tileUpdate = MapNumber.GetTile<Tile>(new Vector3Int(0, level.height - 1, 0));
 
         //string countdown = tileUpdate.gameObject.GetComponent<TextMeshPro>().text;
@@ -83,7 +85,14 @@ public class LevelUpdate : MonoBehaviour
     }
     if (Input.GetMouseButtonUp(0))
     {
-      MainGame.mouseState = 0;
+      parentMainGame.mouseState = 0;
     }
+  }
+  // Execute or play the next dialgiue in the active level
+  public void LevelDialogue()
+  {
+    DialogueCount++;
+    parentMainGame.UIScreenDialogue.GetComponentInChildren<TextMeshProUGUI>().text = "hi";
+    Debug.Log(DialogueCount);
   }
 }

@@ -27,11 +27,13 @@ public class MainGame : MonoBehaviour
   public Canvas ScreenMain;
 
   // All the different Screeens
-  public RectTransform UIGrid; 
   public RectTransform UIMenuMain; 
   public RectTransform UIMenuSelect;
   public RectTransform UIMenuSelectPanel;
-  public RectTransform UIMenuPopup; 
+  public RectTransform UIMenuPopup;
+  public RectTransform UIGrid;
+  public RectTransform UIScreenDialogue;
+  public RectTransform UIGameInterface;
 
   // Transition Buttons
   public Button UIButtonPopuptoStart;
@@ -100,6 +102,15 @@ public class MainGame : MonoBehaviour
     Game
   }
   public MenuState menuState;
+
+  public enum DialogueState
+  {
+    Closed,
+    Open,
+    Listen,
+    Writing
+  }
+  public DialogueState dialogueState;
 
   public enum MouseTileState
   {
@@ -192,7 +203,7 @@ public class MainGame : MonoBehaviour
     //mapDirectory.GetFiles();
 
     // Main menu button listeners
-    UIButtonMaintoStart.onClick.AddListener(delegate { LevelStart_init(levelNumber_current); gameState = GameState.Game; menuState = MenuState.Game; runState = RunState.Transition; });
+    UIButtonMaintoStart.onClick.AddListener(delegate { LevelStart_init(levelNumber_current); gameState = GameState.Game; menuState = MenuState.Game; runState = RunState.Transition; dialogueState = DialogueState.Open; }); 
     UIButtonMaintoSelect.onClick.AddListener(delegate { gameState = GameState.Menu; ; menuState = MenuState.Select; runState = RunState.Transition; }); 
 
     // Select level menu button listeners
@@ -222,7 +233,7 @@ public class MainGame : MonoBehaviour
     UIButtonPopuptoSelect.onClick.AddListener(delegate { gameState = GameState.Menu; menuState = MenuState.Select; runState = RunState.Transition; });
 
     // Ingame menu
-    UIButtonGametoMain.onClick.AddListener(delegate { gameState = GameState.Menu; ; menuState = MenuState.Main; runState = RunState.Transition; });
+    UIButtonGametoMain.onClick.AddListener(delegate { gameState = GameState.Menu; menuState = MenuState.Main; runState = RunState.Transition; });
 
     // Set states
     gameState = GameState.Menu;
@@ -243,6 +254,7 @@ public class MainGame : MonoBehaviour
       UIMenuSelect.gameObject.SetActive(false);
       UIMenuPopup.gameObject.SetActive(false);
       UIButtonGametoMain.gameObject.SetActive(false);
+      UIScreenDialogue.gameObject.SetActive(false);
       MapClick.gameObject.SetActive(false);
       MapNumber.gameObject.SetActive(false);
       runState = RunState.Menu;
@@ -254,6 +266,7 @@ public class MainGame : MonoBehaviour
       UIMenuSelect.gameObject.SetActive(true);
       UIMenuPopup.gameObject.SetActive(false);
       UIButtonGametoMain.gameObject.SetActive(false);
+      UIScreenDialogue.gameObject.SetActive(false);
       MapClick.gameObject.SetActive(false);
       MapNumber.gameObject.SetActive(false);
       runState = RunState.Menu;
@@ -265,6 +278,7 @@ public class MainGame : MonoBehaviour
       UIMenuSelect.gameObject.SetActive(false);
       UIMenuPopup.gameObject.SetActive(true);
       UIButtonGametoMain.gameObject.SetActive(false);
+      UIScreenDialogue.gameObject.SetActive(false);
       MapClick.gameObject.SetActive(false);
       MapNumber.gameObject.SetActive(false);
       runState = RunState.Menu;
@@ -281,15 +295,30 @@ public class MainGame : MonoBehaviour
       runState = RunState.Game;
     }
 
+    // Dialogue States
+    if (runState == RunState.Game && dialogueState == DialogueState.Closed)
+    {
+      UIScreenDialogue.gameObject.SetActive(false);
+    }
+    else if (runState == RunState.Game && dialogueState == DialogueState.Open)
+    {
+      UIScreenDialogue.gameObject.SetActive(true);
+      dialogueState = DialogueState.Writing;
+    }
+    
+    if (runState == RunState.Game && dialogueState == DialogueState.Writing)
+    {
+      childLevelUpdate.LevelDialogue();
+    }
+
+
     if (runState == RunState.Game)
     {
       childLevelUpdate.LevelListen(levelActive);
     }
-
   }
 
   // *LevelStart Instantation*
-
   private void LevelStart_init(int l) {
 
     // Read the json file into a local string 
@@ -311,6 +340,7 @@ public class MainGame : MonoBehaviour
     }
 
     childLevelStart.LevelGenerate(levelRandom);
+
 
     //childLevelStart.LevelLoad(levelActive);
   }
