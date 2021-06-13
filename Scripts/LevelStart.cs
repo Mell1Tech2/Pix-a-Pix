@@ -219,7 +219,7 @@ public class LevelStart: MonoBehaviour
               }
             }
           }
-          //Applies the static level type 1 restrictions
+          // Applies the static level type 1 restrictions
           if (Array.Exists<int>(levelStatic.type1RestrictX, element => element.Equals(tileNumberCorrect)) &&
           Array.Exists<int>(levelStatic.type1RestrictY, element => element.Equals(tileNumberCorrect))) { tileNumberCorrect = 0; }
           //Debug.Log(tileNumberCorrect);

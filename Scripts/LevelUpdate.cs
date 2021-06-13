@@ -89,10 +89,9 @@ public class LevelUpdate : MonoBehaviour
     }
   }
   // Execute or play the next dialgiue in the active level
-  public void LevelDialogue()
+  public void LevelDialogue(string script)
   {
-    DialogueCount++;
-    parentMainGame.UIScreenDialogue.GetComponentInChildren<TextMeshProUGUI>().text = "hi";
-    Debug.Log(DialogueCount);
+    parentMainGame.UIScreenDialogue.GetComponentInChildren<TextMeshProUGUI>().text = script;
+    //Debug.Log(DialogueCount);
   }
 }

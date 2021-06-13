@@ -26,7 +26,7 @@ public class MainGame : MonoBehaviour
   // Main Screen
   public Canvas ScreenMain;
 
-  // All the different Screeens
+  //  Different Screeens
   public RectTransform UIMenuMain; 
   public RectTransform UIMenuSelect;
   public RectTransform UIMenuSelectPanel;
@@ -43,6 +43,7 @@ public class MainGame : MonoBehaviour
   public Button UIButtonMaintoSelect;
   public Button UIButtonLeveltoMain;
   public Button UIButtonGametoMain;
+  public Button UIButtonDialoguePanel;
   public GameObject UIButtonSelect;
 
   // ingame UI panel
@@ -81,8 +82,11 @@ public class MainGame : MonoBehaviour
     public int[] type1RestrictY;
     public int[] type2Restict;
     public string name;
+    public string[] script;
   }
   public LevelStatic levelActive = new LevelStatic();
+
+  public string[] script;
 
   // State Enumerations 
 
@@ -103,12 +107,17 @@ public class MainGame : MonoBehaviour
   }
   public MenuState menuState;
 
+
+  // Dialogue
+  public int dialogueScript;
+
   public enum DialogueState
   {
+    Listen,
     Closed,
     Open,
-    Listen,
-    Writing
+    Reset,
+    Next,
   }
   public DialogueState dialogueState;
 
@@ -200,6 +209,8 @@ public class MainGame : MonoBehaviour
     maps[13] = map14.text;
     maps[14] = map15.text;*/
 
+     script = new string[2];
+
     //mapDirectory.GetFiles();
 
     // Main menu button listeners
@@ -235,6 +246,8 @@ public class MainGame : MonoBehaviour
     // Ingame menu
     UIButtonGametoMain.onClick.AddListener(delegate { gameState = GameState.Menu; menuState = MenuState.Main; runState = RunState.Transition; });
 
+    UIButtonDialoguePanel.onClick.AddListener(delegate { dialogueState = DialogueState.Next; });
+
     // Set states
     gameState = GameState.Menu;
     runState = RunState.Transition;
@@ -244,7 +257,6 @@ public class MainGame : MonoBehaviour
   void Update()
   {
     // *State Machines*
-
 
     // Menu States
     if (runState == RunState.Transition && menuState == MenuState.Main)
@@ -296,22 +308,52 @@ public class MainGame : MonoBehaviour
     }
 
     // Dialogue States
-    if (runState == RunState.Game && dialogueState == DialogueState.Closed)
+    if (runState == RunState.Game && dialogueState == DialogueState.Listen)
+    {
+
+    }
+    else if (runState == RunState.Game && dialogueState == DialogueState.Closed)
     {
       UIScreenDialogue.gameObject.SetActive(false);
     }
     else if (runState == RunState.Game && dialogueState == DialogueState.Open)
     {
       UIScreenDialogue.gameObject.SetActive(true);
-      dialogueState = DialogueState.Writing;
+      dialogueState = DialogueState.Reset;
     }
-    
-    if (runState == RunState.Game && dialogueState == DialogueState.Writing)
+
+
+    script[0] = "test";
+    script[1] = "test2";
+
+    if (runState == RunState.Game && dialogueState == DialogueState.Reset)
     {
-      childLevelUpdate.LevelDialogue();
+      dialogueScript = 0;
+      if (dialogueScript < script.Length)
+      {
+        childLevelUpdate.LevelDialogue(script[dialogueScript]);
+        dialogueState = DialogueState.Listen;
+      }
+      else
+      {
+        dialogueState = DialogueState.Closed;
+      }
+    }
+    else if (runState == RunState.Game && dialogueState == DialogueState.Next)
+    {
+      dialogueScript++;
+      if (dialogueScript < script.Length)
+      {
+        childLevelUpdate.LevelDialogue(script[dialogueScript]);
+        dialogueState = DialogueState.Listen;
+      }
+      else
+      {
+        dialogueState = DialogueState.Closed;
+      }
     }
 
-
+    // Run Game State
     if (runState == RunState.Game)
     {
       childLevelUpdate.LevelListen(levelActive);
