@@ -7,22 +7,35 @@ using UnityEngine.UI;
 
 public class MainGame : MonoBehaviour
 {
+  // *Classes*
+
+  // Parent class reference for children
   public static MainGame Instance;
 
+  // Child classes
   [SerializeField]
   internal LevelStart childLevelStart;
   [SerializeField]
   internal LevelUpdate childLevelUpdate;
 
+  // *Unity game object reference*
+
+  // Main Camera
   public Camera CameraMain; 
 
+  // Main Screen
   public Canvas ScreenMain;
-  public RectTransform UIGrid; 
+
+  //  Different Screeens
   public RectTransform UIMenuMain; 
   public RectTransform UIMenuSelect;
   public RectTransform UIMenuSelectPanel;
-  public RectTransform UIMenuPopup; 
+  public RectTransform UIMenuPopup;
+  public RectTransform UIGrid;
+  public RectTransform UIScreenDialogue;
+  public RectTransform UIGameInterface;
 
+  // Transition Buttons
   public Button UIButtonPopuptoStart;
   public Button UIButtonPopuptoMain;
   public Button UIButtonPopuptoSelect;
@@ -30,10 +43,15 @@ public class MainGame : MonoBehaviour
   public Button UIButtonMaintoSelect;
   public Button UIButtonLeveltoMain;
   public Button UIButtonGametoMain;
+  public Button UIButtonDialoguePanel;
   public GameObject UIButtonSelect;
 
+  // ingame UI panel
   public Image UIImage;
 
+  // *Class objects*
+
+  // Random level object
   [Serializable]
   public class LevelRandom
   {
@@ -49,6 +67,7 @@ public class MainGame : MonoBehaviour
   }
   LevelRandom levelRandom = new LevelRandom();
 
+  // Static level object
   [Serializable]
   public class LevelStatic
   {
@@ -63,16 +82,65 @@ public class MainGame : MonoBehaviour
     public int[] type1RestrictY;
     public int[] type2Restict;
     public string name;
+    public string[] script;
   }
   public LevelStatic levelActive = new LevelStatic();
 
-  // Level active or not
-  [NonSerialized]
-  public bool levelState;
+  public string[] script;
+
+  // State Enumerations 
 
   // Game active or not
+  public enum GameState
+  {
+    Game,
+    Menu
+  }
+  public GameState gameState;
+
+  public enum MenuState
+  {
+    Main,
+    Select,
+    Popup,
+    Game
+  }
+  public MenuState menuState;
+
+
+  // Dialogue
+  public int dialogueScript;
+
+  public enum DialogueState
+  {
+    Listen,
+    Closed,
+    Open,
+    Reset,
+    Next,
+  }
+  public DialogueState dialogueState;
+
+  public enum MouseTileState
+  {
+    Wait,
+    UnSelect,
+    Select
+  }
+  public MouseTileState mouseTileState;
+
+  // Run time state that when changed will execute special code in the update
+  public enum RunState
+  {
+    Transition,
+    Menu,
+    Game
+  }
+  public RunState runState;
+
+  // Game mouse state
   [NonSerialized]
-  public bool gameState;
+  public int mouseState;
 
   // Current Level number
   [NonSerialized]
@@ -141,13 +209,13 @@ public class MainGame : MonoBehaviour
     maps[13] = map14.text;
     maps[14] = map15.text;*/
 
-
+     script = new string[2];
 
     //mapDirectory.GetFiles();
 
     // Main menu button listeners
-    UIButtonMaintoStart.onClick.AddListener(delegate { LevelStart_init(levelNumber_current); });
-    UIButtonMaintoSelect.onClick.AddListener(UISelect_transition); 
+    UIButtonMaintoStart.onClick.AddListener(delegate { LevelStart_init(levelNumber_current); gameState = GameState.Game; menuState = MenuState.Game; runState = RunState.Transition; dialogueState = DialogueState.Open; }); 
+    UIButtonMaintoSelect.onClick.AddListener(delegate { gameState = GameState.Menu; ; menuState = MenuState.Select; runState = RunState.Transition; }); 
 
     // Select level menu button listeners
     for (int i = 0; i<maps.Length; i++)
@@ -165,64 +233,135 @@ public class MainGame : MonoBehaviour
       Button btn = goButton.GetComponent<Button>();
       btn.GetComponentInChildren<Text>().text = levelRandom.name;
       btn.GetComponentInChildren<TextMeshProUGUI>().text = (l + 1).ToString();
-      btn.onClick.AddListener(delegate { levelNumber_current = l; LevelStart_init(l); });
+      btn.onClick.AddListener(delegate { levelNumber_current = l; LevelStart_init(l); gameState = GameState.Game; menuState = MenuState.Game; runState = RunState.Transition; });
     }
-    UIButtonLeveltoMain.onClick.AddListener(UIMainMenu_transition);
+    UIButtonLeveltoMain.onClick.AddListener(delegate { gameState = GameState.Menu;  menuState = MenuState.Main; runState = RunState.Transition; });
 
     // Popup menu button listeners
     //UIButtonPopuptoStart.onClick.AddListener(delegate { levelNumber_current += 1; LevelStart_init(levelNumber_current); });
-    UIButtonPopuptoStart.onClick.AddListener(delegate { LevelStart_init(levelNumber_current); });
-    UIButtonPopuptoMain.onClick.AddListener(UIMainMenu_transition);
-    UIButtonPopuptoSelect.onClick.AddListener(UISelect_transition);
+    UIButtonPopuptoStart.onClick.AddListener(delegate { LevelStart_init(levelNumber_current); gameState = GameState.Game; menuState = MenuState.Game; runState = RunState.Transition; });
+    UIButtonPopuptoMain.onClick.AddListener(delegate { gameState = GameState.Menu;  menuState = MenuState.Main; runState = RunState.Transition; });
+    UIButtonPopuptoSelect.onClick.AddListener(delegate { gameState = GameState.Menu; menuState = MenuState.Select; runState = RunState.Transition; });
 
     // Ingame menu
-    UIButtonGametoMain.onClick.AddListener(StateGame_pause);
+    UIButtonGametoMain.onClick.AddListener(delegate { gameState = GameState.Menu; menuState = MenuState.Main; runState = RunState.Transition; });
 
-    // Transition screens
-    UIMenuMain.gameObject.SetActive(true);
-    UIMenuSelect.gameObject.SetActive(false);
-    UIMenuPopup.gameObject.SetActive(false);
-    UIButtonGametoMain.gameObject.SetActive(false);
+    UIButtonDialoguePanel.onClick.AddListener(delegate { dialogueState = DialogueState.Next; });
 
     // Set states
-    levelState = false;
+    gameState = GameState.Menu;
+    runState = RunState.Transition;
+    mouseState = 0;
   }
 
   void Update()
   {
-    //Debug.Log(levelActive_state);
-    if (levelState == true)
+    // *State Machines*
+
+    // Menu States
+    if (runState == RunState.Transition && menuState == MenuState.Main)
     {
+      Debug.Log("Main State");
+      UIMenuMain.gameObject.SetActive(true);
+      UIMenuSelect.gameObject.SetActive(false);
+      UIMenuPopup.gameObject.SetActive(false);
+      UIButtonGametoMain.gameObject.SetActive(false);
+      UIScreenDialogue.gameObject.SetActive(false);
+      MapClick.gameObject.SetActive(false);
+      MapNumber.gameObject.SetActive(false);
+      runState = RunState.Menu;
+    }
+    else if (runState == RunState.Transition && menuState == MenuState.Select)
+    {
+      Debug.Log("Select State");
+      UIMenuMain.gameObject.SetActive(false);
+      UIMenuSelect.gameObject.SetActive(true);
+      UIMenuPopup.gameObject.SetActive(false);
+      UIButtonGametoMain.gameObject.SetActive(false);
+      UIScreenDialogue.gameObject.SetActive(false);
+      MapClick.gameObject.SetActive(false);
+      MapNumber.gameObject.SetActive(false);
+      runState = RunState.Menu;
+    }
+    else if (runState == RunState.Transition && menuState == MenuState.Popup)
+    {
+      Debug.Log("Popup State");
+      UIMenuMain.gameObject.SetActive(false);
+      UIMenuSelect.gameObject.SetActive(false);
+      UIMenuPopup.gameObject.SetActive(true);
+      UIButtonGametoMain.gameObject.SetActive(false);
+      UIScreenDialogue.gameObject.SetActive(false);
+      MapClick.gameObject.SetActive(false);
+      MapNumber.gameObject.SetActive(false);
+      runState = RunState.Menu;
+    }
+    else if (runState == RunState.Transition && menuState == MenuState.Game)
+    {
+      Debug.Log("Game State");
       UIMenuMain.gameObject.SetActive(false);
       UIMenuSelect.gameObject.SetActive(false);
       UIMenuPopup.gameObject.SetActive(false);
       UIButtonGametoMain.gameObject.SetActive(true);
       MapClick.gameObject.SetActive(true);
       MapNumber.gameObject.SetActive(true);
+      runState = RunState.Game;
+    }
+
+    // Dialogue States
+    if (runState == RunState.Game && dialogueState == DialogueState.Listen)
+    {
+
+    }
+    else if (runState == RunState.Game && dialogueState == DialogueState.Closed)
+    {
+      UIScreenDialogue.gameObject.SetActive(false);
+    }
+    else if (runState == RunState.Game && dialogueState == DialogueState.Open)
+    {
+      UIScreenDialogue.gameObject.SetActive(true);
+      dialogueState = DialogueState.Reset;
+    }
+
+
+    script[0] = "test";
+    script[1] = "test2";
+
+    if (runState == RunState.Game && dialogueState == DialogueState.Reset)
+    {
+      dialogueScript = 0;
+      if (dialogueScript < script.Length)
+      {
+        childLevelUpdate.LevelDialogue(script[dialogueScript]);
+        dialogueState = DialogueState.Listen;
+      }
+      else
+      {
+        dialogueState = DialogueState.Closed;
+      }
+    }
+    else if (runState == RunState.Game && dialogueState == DialogueState.Next)
+    {
+      dialogueScript++;
+      if (dialogueScript < script.Length)
+      {
+        childLevelUpdate.LevelDialogue(script[dialogueScript]);
+        dialogueState = DialogueState.Listen;
+      }
+      else
+      {
+        dialogueState = DialogueState.Closed;
+      }
+    }
+
+    // Run Game State
+    if (runState == RunState.Game)
+    {
       childLevelUpdate.LevelListen(levelActive);
     }
   }
 
-  // UI Transitions
-  public void UIMainMenu_transition()
-  {
-    UIMenuMain.gameObject.SetActive(true);
-    UIMenuSelect.gameObject.SetActive(false);
-    UIMenuPopup.gameObject.SetActive(false);
-  }
-  public void UISelect_transition()
-  {
-    UIMenuMain.gameObject.SetActive(false);
-    UIMenuSelect.gameObject.SetActive(true);
-    UIMenuPopup.gameObject.SetActive(false);
-  }
-  public void StateGame_pause()
-  {
-    gameState = false;
-  }
-
+  // *LevelStart Instantation*
   private void LevelStart_init(int l) {
-    //Debug.Log(l);
 
     // Read the json file into a local string 
     string json = maps[l];
@@ -244,13 +383,14 @@ public class MainGame : MonoBehaviour
 
     childLevelStart.LevelGenerate(levelRandom);
 
+
     //childLevelStart.LevelLoad(levelActive);
   }
 
 
 
 
-   // Basic functions
+   // *Basic functions*
   public Vector3Int TileVector_get(Vector3 levelPos)
   {
     // Return the tile that is clicked
@@ -287,7 +427,7 @@ public class MainGame : MonoBehaviour
     return levelIndex;
   }
 
-  // Manipulate TileMaps
+  // *Manipulate TileMaps*
   public void SetTileColour(Color colour, Vector3Int position)
   {
     // Flag the tile, inidicating that it can change colour.

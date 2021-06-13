@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Puzzle Game
  
 =======
@@ -34,8 +33,3 @@ Could
 Would
 1. Add some navigation
 2. Hints to help discover the image
->>>>>>> parent of 72bd128... Update and rename README.md to README.txt
-=======
-# Puzzle Game
- 
->>>>>>> parent of 70d9278... Update Readme
