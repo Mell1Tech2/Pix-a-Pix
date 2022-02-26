@@ -1,0 +1,51 @@
+{"level":"static",
+"width":4,"height":4,
+"tileType":[
+1,0,0,0,
+1,0,0,0,
+1,0,0,0,
+3,1,1,1],
+"tileCorrect":[
+0,0,0,0,
+0,0,1,0,
+0,0,0,0,
+0,0,0,0],
+ "tileSelected":[
+0,0,0,0,
+0,0,0,0,
+0,0,0,0,
+0,0,0,0
+],"mirror":1,
+"type1RestrictX":[0,4],
+"type1RestrictY":[0,4],
+"type2Restict":[0,9],
+"name":"Tutorial",
+"dialogueScript": [
+"Welcome to Pix a Pix", 
+"To play this game you need to select the correct tiles to win", 
+"The top tiles and left tiles cannot be selected as highlighted in purple", 
+"These instead represent the number of correct tiles in that column or row", 
+"The numbers represented in blue represent the number of tiles nearby", 
+"The number 2 for example means there is 2 selectable tile adjacent to it", 
+"The yellow flashing tile represent the total number of tiles you can click", 
+"keep in mind the number may go negative if you over click", 
+"This flashing icon represent the mirror in the grid", 
+"Depending on the icon all selected tiles will be mirrored", 
+"A plus icon would mean any corner tile will be mirrored to every other corner",
+"Certain numbers will not appear in the blue grid like 0, 1, 8 and 9",
+"For columns and rows only the number 0 and the maximum number of correct tiles wont appear"
+],
+"flash": [
+"listen", 
+"listen", 
+"listen", 
+"listen", 
+"listen",
+"listen", 
+"count", 
+"count", 
+"mirror", 
+"mirror", 
+"mirror", 
+"listen"
+]}

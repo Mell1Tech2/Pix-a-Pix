@@ -21,7 +21,7 @@ public class LevelStart: MonoBehaviour
   public Sprite mirror2;
   public Sprite mirror3;
   public Sprite mirror4;
-  private int tileCorrect_countdown;
+  
 
   // *Randomly generate a new static level*
   public void LevelGenerate(MainGame.LevelRandom levelRandom)
@@ -55,6 +55,8 @@ public class LevelStart: MonoBehaviour
       //Debug.Log(tilePattern[i]);
     }
 
+    // *Tile type 1*
+
     // Mirror 1 Pattern duplication
     if (levelStatic.mirror == 1)
     {
@@ -84,7 +86,7 @@ public class LevelStart: MonoBehaviour
       }
     }
 
-    // Set grid tile type
+    // Tile type 2
     for (int y = 0; y < levelStatic.height; y++)
     {
       for (int x = 0; x < levelStatic.width; x++)
@@ -95,6 +97,12 @@ public class LevelStart: MonoBehaviour
         else { levelStatic.tileType[activeCell] = 2; }
       }
     }
+
+    // Tile type 3
+    int cellType3 = levelStatic.height * levelStatic.width - levelStatic.width;
+
+    levelStatic.tileType[cellType3] = 3;
+
 
     LevelLoad(levelStatic);
   }
@@ -251,17 +259,17 @@ public class LevelStart: MonoBehaviour
         // Logic for tile type 3
         if (levelStatic.tileType[activeCell] == 3)
         {
-          tileCorrect_countdown = 0;
+          parentMainGame.tileCorrect_countdown = 0;
           for (int y_count = 0; y_count < levelStatic.height; y_count++)
           {
             for (int x_count = 0; x_count < levelStatic.width; x_count++)
             {
               int logic = y_count * levelStatic.width + x_count;
               //Debug.Log(logic);
-              if (levelStatic.tileCorrect[logic] == 1) { tileCorrect_countdown++; }
+              if (levelStatic.tileCorrect[logic] == 1) { parentMainGame.tileCorrect_countdown++; }
             }
           }
-          number_value.text = tileCorrect_countdown.ToString();
+          number_value.text = parentMainGame.tileCorrect_countdown.ToString();
         }
 
         // Logic for tile type 4
@@ -276,12 +284,12 @@ public class LevelStart: MonoBehaviour
           //number_value.text = "?";
         }
 
-        parentMainGame.MapNumber.SetTile(new Vector3Int(xCentre, yCentre, 0), tileBasic);
+        parentMainGame.SetTileNumber(tileBasic, new Vector3Int(xCentre, yCentre, 0));
 
         parentMainGame.levelActive = levelStatic;
 
-        // Destroy the original object after the launch
-        Destroy(tileBasic.gameObject, 1);
+
+
       };
     };
 
