@@ -32,10 +32,13 @@ public class MainGame : MonoBehaviour
   public RectTransform UIMenuSelectPanel;
   public RectTransform UIMenuPopup;
   public RectTransform UIGrid;
-  public RectTransform UIGameHighlight;
-  public RectTransform UIGameInterface;
+  public RectTransform UIGameInterfaceMirror;
+  public RectTransform UIGameInterfaceRow;
+  public RectTransform UIGameInterfaceColumn;
   public RectTransform UIScreenDialogue;
   public RectTransform UIGameHighlightMirror;
+  public RectTransform UIGameHighlightRow;
+  public RectTransform UIGameHighlightColumn;
 
   // Transition Buttons
   public Button UIButtonPopuptoStart;
@@ -126,13 +129,14 @@ public class MainGame : MonoBehaviour
     Listen,
     Reset,
     Mirror,
-    Count
+    Count,
+    Column,
+    Row
   }
   public FlashState flashState;
 
   // Dialogue
-  public int dialogueScriptNum;
-  public string dialogueScriptPrevious;
+  public int dialogueScriptNum; 
 
   public enum DialogueState
   {
@@ -170,7 +174,8 @@ public class MainGame : MonoBehaviour
 
   // Current Level number
   [NonSerialized]
-  public int levelNumber_current;
+  public int randomLevelNumber_current;
+  public int tutorialLevelNumber_current;
   public int tileCorrect_countdown;
 
   // Decoded json maps as string array
@@ -200,7 +205,8 @@ public class MainGame : MonoBehaviour
   void Start()
   {
     // Current level set default is 0 
-    levelNumber_current = 0;
+    randomLevelNumber_current = 0;
+    tutorialLevelNumber_current = 0; 
 
     MapAssetRandom = new String[4];
 
@@ -238,13 +244,13 @@ public class MainGame : MonoBehaviour
       Button btn = goButton.GetComponent<Button>();
       btn.GetComponentInChildren<Text>().text = levelRandom.name;
       btn.GetComponentInChildren<TextMeshProUGUI>().text = (l + 1).ToString();
-      btn.onClick.AddListener(delegate { levelNumber_current = l; levelState = LevelState.Random; gameState = GameState.Game; menuState = MenuState.Game; runState = RunState.Transition; });
+      btn.onClick.AddListener(delegate { randomLevelNumber_current = l; levelState = LevelState.Random; gameState = GameState.Game; menuState = MenuState.Game; runState = RunState.Transition; });
     }
     UIButtonLeveltoMain.onClick.AddListener(delegate { gameState = GameState.Menu; menuState = MenuState.Main; runState = RunState.Transition; });
 
     // Popup menu button listeners
     //UIButtonPopuptoStart.onClick.AddListener(delegate { levelNumber_current += 1; LevelStart_init(levelNumber_current); });
-    UIButtonPopuptoStart.onClick.AddListener(delegate { LevelStart_init(levelNumber_current); gameState = GameState.Game; menuState = MenuState.Game; runState = RunState.Transition; });
+    UIButtonPopuptoStart.onClick.AddListener(delegate { LevelStart_init(randomLevelNumber_current); gameState = GameState.Game; menuState = MenuState.Game; runState = RunState.Transition; });
     UIButtonPopuptoMain.onClick.AddListener(delegate { gameState = GameState.Menu; menuState = MenuState.Main; runState = RunState.Transition; });
     UIButtonPopuptoSelect.onClick.AddListener(delegate { gameState = GameState.Menu; menuState = MenuState.Select; runState = RunState.Transition; });
 
@@ -273,8 +279,12 @@ public class MainGame : MonoBehaviour
       UIMenuPopup.gameObject.SetActive(false);
       UIButtonGametoMain.gameObject.SetActive(false);
       UIScreenDialogue.gameObject.SetActive(false);
+      UIGameInterfaceMirror.gameObject.SetActive(false);
+      UIGameInterfaceRow.gameObject.SetActive(false);
+      UIGameInterfaceColumn.gameObject.SetActive(false);
       MapClick.gameObject.SetActive(false);
       MapNumber.gameObject.SetActive(false);
+      flashState = FlashState.Reset;
       runState = RunState.Menu;
     }
     else if (runState == RunState.Transition && menuState == MenuState.Select)
@@ -285,8 +295,12 @@ public class MainGame : MonoBehaviour
       UIMenuPopup.gameObject.SetActive(false);
       UIButtonGametoMain.gameObject.SetActive(false);
       UIScreenDialogue.gameObject.SetActive(false);
+      UIGameInterfaceMirror.gameObject.SetActive(false);
+      UIGameInterfaceRow.gameObject.SetActive(false);
+      UIGameInterfaceColumn.gameObject.SetActive(false);
       MapClick.gameObject.SetActive(false);
       MapNumber.gameObject.SetActive(false);
+      flashState = FlashState.Reset;
       runState = RunState.Menu;
     }
     else if (runState == RunState.Transition && menuState == MenuState.Popup)
@@ -297,8 +311,12 @@ public class MainGame : MonoBehaviour
       UIMenuPopup.gameObject.SetActive(true);
       UIButtonGametoMain.gameObject.SetActive(false);
       UIScreenDialogue.gameObject.SetActive(false);
+      UIGameInterfaceMirror.gameObject.SetActive(false);
+      UIGameInterfaceRow.gameObject.SetActive(false);
+      UIGameInterfaceColumn.gameObject.SetActive(false);
       MapClick.gameObject.SetActive(false);
       MapNumber.gameObject.SetActive(false);
+      flashState = FlashState.Reset;
       runState = RunState.Menu;
     }
     else if (runState == RunState.Transition && menuState == MenuState.Game)
@@ -308,6 +326,9 @@ public class MainGame : MonoBehaviour
       UIMenuSelect.gameObject.SetActive(false);
       UIMenuPopup.gameObject.SetActive(false);
       UIButtonGametoMain.gameObject.SetActive(true);
+      UIGameInterfaceMirror.gameObject.SetActive(true);
+      UIGameInterfaceRow.gameObject.SetActive(true);
+      UIGameInterfaceColumn.gameObject.SetActive(true);
       MapClick.gameObject.SetActive(true);
       MapNumber.gameObject.SetActive(true);
       runState = RunState.LevelSelection;
@@ -320,14 +341,16 @@ public class MainGame : MonoBehaviour
     }
     else if (runState == RunState.LevelSelection && levelState == LevelState.Tutorial)
     {
-      LevelStart_init(levelNumber_current);
+      LevelStart_init(tutorialLevelNumber_current);
       dialogueState = DialogueState.Open;
       runState = RunState.Running;
+      levelState = LevelState.Listen;
     }
     else if (runState == RunState.LevelSelection && levelState == LevelState.Random)
     {
-      LevelStart_init(levelNumber_current); 
+      LevelStart_init(randomLevelNumber_current); 
       runState = RunState.Running;
+      levelState = LevelState.Listen;
     }
 
     // Dialogue States
@@ -348,7 +371,6 @@ public class MainGame : MonoBehaviour
     if (runState == RunState.Running && dialogueState == DialogueState.Pause)
     {
       dialogueScriptNum = 0;
-      dialogueScriptPrevious = "";
       if (dialogueScriptNum < levelActive.dialogueScript.Length)
       {
         StateSnippetFlashDialogue();
@@ -360,7 +382,7 @@ public class MainGame : MonoBehaviour
     else if (runState == RunState.Tutorial && dialogueState == DialogueState.Next)
     {
       dialogueScriptNum++;
-      if (dialogueScriptNum < levelActive.dialogueScript.Length)
+      if (dialogueScriptNum < levelActive.dialogueScript.Length - 1)
       {
         StateSnippetFlashDialogue();
         dialogueState = DialogueState.Listen;
@@ -371,6 +393,13 @@ public class MainGame : MonoBehaviour
         runState = RunState.Running;
       }
     }
+    
+    if (flashState == FlashState.Reset)
+    {
+      UIGameHighlightMirror.gameObject.SetActive(false);
+      UIGameHighlightRow.gameObject.SetActive(false);
+      UIGameHighlightColumn.gameObject.SetActive(false);
+    }
 
 
 
@@ -380,7 +409,7 @@ public class MainGame : MonoBehaviour
       if (flash == 1)
       {
         t += Time.deltaTime * 100;
-        UIGameHighlight.GetChild(0).transform.GetComponent<Image>().color = new Color32(255, 255, 255, ((byte)t));
+        UIGameHighlightMirror.transform.GetComponent<Image>().color = new Color32(255, 255, 255, ((byte)t));
         if (t > 100)
         {
           flash = 0;
@@ -389,7 +418,49 @@ public class MainGame : MonoBehaviour
       else
       {
         t -= Time.deltaTime * 100;
-        UIGameHighlight.GetChild(0).transform.GetComponent<Image>().color = new Color32(255, 255, 255, ((byte)t));
+        UIGameHighlightMirror.transform.GetComponent<Image>().color = new Color32(255, 255, 255, ((byte)t));
+        if (t < 0)
+        {
+          flash = 1;
+        }
+      }
+    }
+    if (flashState == FlashState.Column)
+    {
+      if (flash == 1)
+      {
+        t += Time.deltaTime * 100;
+        UIGameHighlightColumn.transform.GetComponent<Image>().color = new Color32(255, 255, 255, ((byte)t));
+        if (t > 100)
+        {
+          flash = 0;
+        }
+      }
+      else
+      {
+        t -= Time.deltaTime * 100;
+        UIGameHighlightColumn.transform.GetComponent<Image>().color = new Color32(255, 255, 255, ((byte)t));
+        if (t < 0)
+        {
+          flash = 1;
+        }
+      }
+    }
+    if (flashState == FlashState.Row)
+    {
+      if (flash == 1)
+      {
+        t += Time.deltaTime * 100;
+        UIGameHighlightRow.transform.GetComponent<Image>().color = new Color32(255, 255, 255, ((byte)t));
+        if (t > 100)
+        {
+          flash = 0;
+        }
+      }
+      else
+      {
+        t -= Time.deltaTime * 100;
+        UIGameHighlightRow.transform.GetComponent<Image>().color = new Color32(255, 255, 255, ((byte)t));
         if (t < 0)
         {
           flash = 1;
@@ -440,7 +511,7 @@ public class MainGame : MonoBehaviour
       levelRandom = JsonUtility.FromJson<LevelRandom>(json);
 
       // Sets the main camera to the same size at the levelActive height
-      CameraMain.orthographicSize = (float)levelRandom.height * 5 / 6;
+      CameraMain.orthographicSize = (float)levelRandom.height;
       //Debug.Log(UIGrid.localPosition);
       //UIGameHighlight.sizeDelta = new Vector2(levelRandom.width * 200, levelRandom.height * 200);   
 
@@ -466,13 +537,13 @@ public class MainGame : MonoBehaviour
       dialogueScript = levelActive.dialogueScript;
 
       // Sets the main camera to the same size at the levelActive height
-      CameraMain.orthographicSize = (float)levelActive.height * 5 / 6;
+      CameraMain.orthographicSize = (float)levelActive.height;
       //Debug.Log(UIGrid.localPosition);
       //UIGameHighlight.sizeDelta = new Vector2(levelRandom.width * 200, levelRandom.height * 200);   
 
       // Shifts the grid postion when a map had odd width
       UIGrid.localPosition = new Vector3(-ScreenMain.GetComponent<RectTransform>().rect.width / 2, -ScreenMain.GetComponent<RectTransform>().rect.height / 2, 0);
-      if (levelRandom.width % 2 == 1)
+      if (levelActive.width % 2 == 1)
       {
         UIGrid.localPosition = new Vector3(-ScreenMain.GetComponent<RectTransform>().rect.width / 2 - 0.5f, -ScreenMain.GetComponent<RectTransform>().rect.height / 2 - 0.5f, 0);
       }
@@ -493,15 +564,20 @@ public class MainGame : MonoBehaviour
 
     // A number to remove the top and left border of the grid from tile selection
     int borderY = 1;
-    int borderX = 1;
+    int borderX = 1; 
     if (levelActive.height % 2 == 1)
     {
       borderY = (int)0.5;
       borderX = (int)1.5;
     }
+    int extraShiftX = 0;
+    if (levelActive.width % 2 == 1) 
+    {
+      extraShiftX = 1;
+    }
 
-    // Make sure it's in the game screen but also exclude the left column and top row from selection, it is adjusted centering it like a graph
-    if (tilePos.x >= levelActive.width / 2 + borderX || tilePos.y >= levelActive.height / 2 - borderY || tilePos.x < -levelActive.width / 2 + borderX || tilePos.y < -levelActive.height / 2)
+      // Make sure it's in the game screen but also exclude the left column and top row from selection, it is adjusted centering it like a graph
+      if (tilePos.x >= levelActive.width / 2 + extraShiftX || tilePos.y >= levelActive.height / 2 - borderY || tilePos.x < -levelActive.width / 2 + borderX || tilePos.y < -levelActive.height / 2)
     {
       // An unreachable tile
       tilePos = new Vector3Int(0, 0, -1);
@@ -548,7 +624,7 @@ public class MainGame : MonoBehaviour
 
   }
 
-  public void SetTileColour(Color colour, Vector3Int position)
+  public void SetTileColour(Color colour, Vector3Int position) 
   {
     // Flag the tile, inidicating that it can change colour.
     MapClick.SetTileFlags(position, TileFlags.None);
@@ -559,22 +635,31 @@ public class MainGame : MonoBehaviour
 
   // *State Snippet*
   public void StateSnippetFlashDialogue() { 
-    childLevelUpdate.LevelDialogue(levelActive.dialogueScript[dialogueScriptNum]);
-    if (dialogueScriptPrevious != levelActive.flash[dialogueScriptNum])
-    {
-      UIGameHighlight.GetChild(0).transform.GetComponent<Image>().color = new Color32(255, 255, 255, 100);
-      SetTileColour(new Color32(255, 255, 255, 100), new Vector3Int(-levelActive.width / 2, levelActive.height / 2 - 1 + levelActive.height % 2, 0)); 
-    }
+    childLevelUpdate.LevelDialogue(levelActive.dialogueScript[dialogueScriptNum]); 
+
     if (levelActive.flash[dialogueScriptNum] == "mirror")
     {
+      UIGameHighlightMirror.gameObject.SetActive(true);
       flashState = FlashState.Mirror;
-      dialogueScriptPrevious = levelActive.flash[dialogueScriptNum];
+    }
+    else if(levelActive.flash[dialogueScriptNum] == "column")
+    {
+      UIGameHighlightColumn.gameObject.SetActive(true);
+      flashState = FlashState.Column;
+    }
+    else if(levelActive.flash[dialogueScriptNum] == "row")
+    {
+      UIGameHighlightRow.gameObject.SetActive(true);
+      flashState = FlashState.Row;
     }
     else if(levelActive.flash[dialogueScriptNum] == "count")
     {
       flashState = FlashState.Count;
-      dialogueScriptPrevious = levelActive.flash[dialogueScriptNum]; 
     }
-
+    else if (levelActive.flash[dialogueScriptNum] == "listen")
+    {
+      SetTileColour(new Color32(255, 255, 255, 100), new Vector3Int(-levelActive.width / 2, levelActive.height / 2 - 1 + levelActive.height % 2, 0));
+      flashState = FlashState.Reset;
+    }
   }
 }
