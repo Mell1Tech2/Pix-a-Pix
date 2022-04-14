@@ -2,7 +2,7 @@
 "width":8,"height":8,
 "mirrorOptions":[1],
 "tileCorrectRestrict":[0,15],
-"type1RestrictX":[0,1,6,7],
-"type1RestrictY":[0,1,6,7],
-"type2Restict":[0,1,8,9],
+"type1RestrictX":[0,7],
+"type1RestrictY":[0,7],
+"type2Restict":[0,9],
 "name":"Advanced"}

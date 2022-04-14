@@ -113,7 +113,9 @@ public class LevelStart: MonoBehaviour
     parentMainGame.MapClick.ClearAllTiles();
     parentMainGame.MapNumber.ClearAllTiles();
 
+    // *UI Initialization*
 
+    // Mirror Set-up
     parentMainGame.UIImage.sprite = null;
     //Debug.Log(levelActive.mirror);
     if (levelStatic.mirror == 1)
@@ -130,8 +132,16 @@ public class LevelStart: MonoBehaviour
     }
     else if (levelStatic.mirror == 4)
     {
-      parentMainGame.UIImage.sprite = mirror4;
+      parentMainGame.UIImage.sprite = mirror4; 
     }
+
+    // Row and Column Set-up
+    parentMainGame.UIGameInterfaceRow.transform.Find("DialogueText").GetComponentInChildren<TextMeshProUGUI>().text = 
+      levelStatic.type1RestrictX[0].ToString() + " | " + levelStatic.type1RestrictX[1].ToString();
+    parentMainGame.UIGameInterfaceColumn.transform.Find("DialogueText").GetComponentInChildren<TextMeshProUGUI>().text =
+      levelStatic.type1RestrictY[0].ToString() + "\n—\n" + levelStatic.type1RestrictY[1].ToString(); 
+
+
 
     String checkStaticType = "";
     String checkStaticCorrect = "";
@@ -281,7 +291,7 @@ public class LevelStart: MonoBehaviour
         // Turns zeros to question marks
         if (number_value.text == "0")
         { 
-          //number_value.text = "?";
+          number_value.text = "?";
         }
 
         parentMainGame.SetTileNumber(tileBasic, new Vector3Int(xCentre, yCentre, 0));

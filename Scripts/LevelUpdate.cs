@@ -27,7 +27,7 @@ public class LevelUpdate : MonoBehaviour
         levelActive.tileSelected[i] = 0;
       }
       string json = JsonUtility.ToJson(levelActive);
-      parentMainGame.MapAssetRandom[parentMainGame.levelNumber_current] = json;
+      parentMainGame.MapAssetRandom[parentMainGame.randomLevelNumber_current] = json;
 
       // Unload level and show popup menu
       parentMainGame.gameState = MainGame.GameState.Menu;
@@ -47,7 +47,7 @@ public class LevelUpdate : MonoBehaviour
       else
       {
         string json = JsonUtility.ToJson(levelActive);
-        parentMainGame.MapAssetRandom[parentMainGame.levelNumber_current] = json;
+        parentMainGame.MapAssetRandom[parentMainGame.randomLevelNumber_current] = json;
       }
 
       // Mouse position to camera position 
